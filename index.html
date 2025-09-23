@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyclist Spin Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header class="app-header">
+            <h1>🚴 Spin Manager</h1>
+            <div class="user-info">
+                <span id="user-name">Guest</span>
+                <button id="logout-btn" class="btn-hidden">Logout</button>
+            </div>
+        </header>
+
+        <!-- Login Section -->
+        <section id="login-section" class="section active">
+            <div class="login-box">
+                <h2>Welcome to Spin Manager!</h2>
+                <p>Create and join cycling spins with friends</p>
+                
+                <div class="login-form">
+                    <h3>Login</h3>
+                    <input type="email" id="login-email" placeholder="Your email">
+                    <input type="password" id="login-password" placeholder="Password">
+                    <button onclick="login()" class="btn-primary">Let's Ride! 🚴</button>
+                    <p>No account? <a href="#" onclick="showRegister()">Create one here!</a></p>
+                </div>
+
+                <div class="register-form hidden">
+                    <h3>Join the Cycling Community!</h3>
+                    <input type="text" id="register-name" placeholder="Your name">
+                    <input type="email" id="register-email" placeholder="Email">
+                    <input type="password" id="register-password" placeholder="Password">
+                    <select id="bike-type">
+                        <option value="road">🚴 Road Bike</option>
+                        <option value="gravel">🚵 Gravel Bike</option>
+                    </select>
+                    <button onclick="register()" class="btn-primary">Create Account</button>
+                    <p>Already have an account? <a href="#" onclick="showLogin()">Login here!</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main App Section -->
+        <section id="app-section" class="section">
+            <div class="app-controls">
+                <button onclick="showCreateSpin()" class="btn-primary">➕ Create New Spin</button>
+                <button onclick="loadSpins()" class="btn-secondary">🔄 Refresh Spins</button>
+            </div>
+
+            <div id="spins-container" class="spins-grid">
+                <p>Loading upcoming spins...</p>
+            </div>
+        </section>
+
+        <!-- Create Spin Section -->
+        <section id="create-spin-section" class="section">
+            <h2>Create a New Spin</h2>
+            <div class="spin-form">
+                <input type="text" id="spin-title" placeholder="Spin name (e.g., Saturday Morning Ride)">
+                <select id="spin-type">
+                    <option value="road">🚴 Road Bike Spin</option>
+                    <option value="gravel">🚵 Gravel Adventure</option>
+                </select>
+                <input type="datetime-local" id="spin-time">
+                <input type="text" id="spin-location" placeholder="Start location">
+                <input type="number" id="spin-distance" placeholder="Distance (km)">
+                <button onclick="createSpin()" class="btn-primary">Create Spin!</button>
+                <button onclick="showApp()" class="btn-secondary">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Our JavaScript Files -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

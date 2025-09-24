@@ -6,7 +6,7 @@ const firebaseConfig = {
   authDomain: "cyclistspinmanager.firebaseapp.com",
   databaseURL: "https://cyclistspinmanager-default-rtdb.firebaseio.com", // ADD THIS LINE!
   projectId: "cyclistspinmanager",
-  storageBucket: "cyclistspinmanager.firebasestorage.app",
+  storageBucket: "cyclistspinmanager.appspot.com",
   messagingSenderId: "297071510855",
   appId: "1:297071510855:web:13143b8d3563e0aa53b862"
 };

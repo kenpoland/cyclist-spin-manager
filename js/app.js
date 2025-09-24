@@ -1,15 +1,17 @@
-// app.js - The brain of our cycling app!
+// app.js - FIXED VERSION - No more database errors!
 
 // Check if user is logged in
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         // User is signed in
+        console.log('User logged in:', user.email);
         showApp();
         document.getElementById('user-name').textContent = user.email;
         document.getElementById('logout-btn').classList.remove('btn-hidden');
         loadSpins();
     } else {
         // No user signed in
+        console.log('No user logged in');
         showLogin();
         document.getElementById('user-name').textContent = 'Guest';
         document.getElementById('logout-btn').classList.add('btn-hidden');
@@ -41,62 +43,47 @@ function showApp() {
     loadSpins();
 }
 
-function createSpin() {
-    console.log('Create spin function called!');
+function showCreateSpin() {
+    showSection('create-spin-section');
+}
+
+// Login function
+function login() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
     
-    const user = firebase.auth().currentUser;
-    
-    if (!user) {
-        alert('Please log in to create a spin');
-        return;
-    }
-    
-    // Get form values
-    const title = document.getElementById('spin-title').value;
-    const type = document.getElementById('spin-type').value;
-    const time = document.getElementById('spin-time').value;
-    const location = document.getElementById('spin-location').value;
-    const distance = document.getElementById('spin-distance').value;
-    
-    // Simple validation
-    if (!title || !time || !location || !distance) {
-        alert('Please fill in all fields!');
-        return;
-    }
-    
-    console.log('Creating spin with data:', { title, type, time, location, distance });
-    
-    // Create spin data
-    const spinData = {
-        title: title,
-        type: type,
-        time: time,
-        location: location,
-        distance: distance,
-        createdBy: user.uid,
-        creatorEmail: user.email,
-        createdAt: new Date().toISOString(),
-        participants: [user.uid]
-    };
-    
-    // Save to Firebase using the correct database reference
-    database.ref('spins').push(spinData)
-    .then(() => {
-        console.log('Spin created successfully!');
-        alert('🎉 Spin created successfully!');
-        
-        // Clear form
-        document.getElementById('spin-title').value = '';
-        document.getElementById('spin-time').value = '';
-        document.getElementById('spin-location').value = '';
-        document.getElementById('spin-distance').value = '';
-        
-        // Go back to main app
-        showApp();
+    firebase.auth().signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        alert('Welcome back! 🚴');
     })
     .catch((error) => {
-        console.error('Error creating spin:', error);
-        alert('Error creating spin: ' + error.message);
+        alert('Login failed: ' + error.message);
+    });
+}
+
+// Register function
+function register() {
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const name = document.getElementById('register-name').value;
+    const bikeType = document.getElementById('bike-type').value;
+    
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        // Save user info to database - FIXED
+        const user = userCredential.user;
+        return database.ref('users/' + user.uid).set({
+            name: name,
+            email: email,
+            bikeType: bikeType,
+            joined: new Date().toISOString()
+        });
+    })
+    .then(() => {
+        alert('Account created successfully! Welcome to the cycling community! 🎉');
+    })
+    .catch((error) => {
+        alert('Registration failed: ' + error.message);
     });
 }
 
@@ -108,7 +95,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     });
 });
 
-// Create a new spin
+// Create a new spin - FIXED
 function createSpin() {
     const user = firebase.auth().currentUser;
     if (!user) {
@@ -128,11 +115,20 @@ function createSpin() {
         participants: [user.uid]
     };
     
-    // Save to Firebase database
-    database().ref('spins').push(spinData)
+    // Simple validation
+    if (!spinData.title || !spinData.time || !spinData.location || !spinData.distance) {
+        alert('Please fill in all fields!');
+        return;
+    }
+    
+    console.log('Creating spin:', spinData);
+    
+    // Save to Firebase database - FIXED
+    database.ref('spins').push(spinData)
     .then(() => {
         alert('Spin created successfully! 🎉');
         showApp();
+        // Clear form
         document.getElementById('spin-title').value = '';
         document.getElementById('spin-time').value = '';
         document.getElementById('spin-location').value = '';
@@ -143,12 +139,13 @@ function createSpin() {
     });
 }
 
-// Load all spins from database
+// Load all spins from database - FIXED (This was line 151!)
 function loadSpins() {
     const spinsContainer = document.getElementById('spins-container');
     spinsContainer.innerHTML = '<p>Loading spins... 🚴</p>';
     
-    database().ref('spins').once('value')
+    // FIXED: Using database.ref() instead of database()
+    database.ref('spins').once('value')
     .then((snapshot) => {
         spinsContainer.innerHTML = '';
         
@@ -165,7 +162,7 @@ function loadSpins() {
     })
     .catch((error) => {
         spinsContainer.innerHTML = '<p>Error loading spins. Please try again.</p>';
-        console.error('Error:', error);
+        console.error('Error loading spins:', error);
     });
 }
 
@@ -191,7 +188,7 @@ function renderSpinCard(spin) {
     spinsContainer.appendChild(card);
 }
 
-// Join a spin
+// Join a spin - FIXED
 function joinSpin(spinId) {
     const user = firebase.auth().currentUser;
     if (!user) {
@@ -199,8 +196,8 @@ function joinSpin(spinId) {
         return;
     }
     
-    // Add user to participants list
-    database().ref('spins/' + spinId + '/participants').transaction((participants) => {
+    // Add user to participants list - FIXED
+    database.ref('spins/' + spinId + '/participants').transaction((participants) => {
         if (participants === null) {
             return [user.uid];
         }
@@ -217,3 +214,7 @@ function joinSpin(spinId) {
         alert('Error joining spin: ' + error.message);
     });
 }
+
+// Add connection test
+console.log('App loaded successfully!');
+console.log('Database object:', database);

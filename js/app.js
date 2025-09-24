@@ -41,47 +41,62 @@ function showApp() {
     loadSpins();
 }
 
-function showCreateSpin() {
-    showSection('create-spin-section');
-}
-
-// Login function
-function login() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+function createSpin() {
+    console.log('Create spin function called!');
     
-    firebase.auth().signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-        alert('Welcome back! 🚴');
-    })
-    .catch((error) => {
-        alert('Login failed: ' + error.message);
-    });
-}
-
-// Register function
-function register() {
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const name = document.getElementById('register-name').value;
-    const bikeType = document.getElementById('bike-type').value;
+    const user = firebase.auth().currentUser;
     
-    firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-        // Save user info to database
-        const user = userCredential.user;
-        return firebase.database().ref('users/' + user.uid).set({
-            name: name,
-            email: email,
-            bikeType: bikeType,
-            joined: new Date().toISOString()
-        });
-    })
+    if (!user) {
+        alert('Please log in to create a spin');
+        return;
+    }
+    
+    // Get form values
+    const title = document.getElementById('spin-title').value;
+    const type = document.getElementById('spin-type').value;
+    const time = document.getElementById('spin-time').value;
+    const location = document.getElementById('spin-location').value;
+    const distance = document.getElementById('spin-distance').value;
+    
+    // Simple validation
+    if (!title || !time || !location || !distance) {
+        alert('Please fill in all fields!');
+        return;
+    }
+    
+    console.log('Creating spin with data:', { title, type, time, location, distance });
+    
+    // Create spin data
+    const spinData = {
+        title: title,
+        type: type,
+        time: time,
+        location: location,
+        distance: distance,
+        createdBy: user.uid,
+        creatorEmail: user.email,
+        createdAt: new Date().toISOString(),
+        participants: [user.uid]
+    };
+    
+    // Save to Firebase using the correct database reference
+    database.ref('spins').push(spinData)
     .then(() => {
-        alert('Account created successfully! Welcome to the cycling community! 🎉');
+        console.log('Spin created successfully!');
+        alert('🎉 Spin created successfully!');
+        
+        // Clear form
+        document.getElementById('spin-title').value = '';
+        document.getElementById('spin-time').value = '';
+        document.getElementById('spin-location').value = '';
+        document.getElementById('spin-distance').value = '';
+        
+        // Go back to main app
+        showApp();
     })
     .catch((error) => {
-        alert('Registration failed: ' + error.message);
+        console.error('Error creating spin:', error);
+        alert('Error creating spin: ' + error.message);
     });
 }
 
@@ -114,7 +129,7 @@ function createSpin() {
     };
     
     // Save to Firebase database
-    firebase.database().ref('spins').push(spinData)
+    database().ref('spins').push(spinData)
     .then(() => {
         alert('Spin created successfully! 🎉');
         showApp();
@@ -133,7 +148,7 @@ function loadSpins() {
     const spinsContainer = document.getElementById('spins-container');
     spinsContainer.innerHTML = '<p>Loading spins... 🚴</p>';
     
-    firebase.database().ref('spins').once('value')
+    database().ref('spins').once('value')
     .then((snapshot) => {
         spinsContainer.innerHTML = '';
         
@@ -185,7 +200,7 @@ function joinSpin(spinId) {
     }
     
     // Add user to participants list
-    firebase.database().ref('spins/' + spinId + '/participants').transaction((participants) => {
+    database().ref('spins/' + spinId + '/participants').transaction((participants) => {
         if (participants === null) {
             return [user.uid];
         }

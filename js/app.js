@@ -1,6 +1,20 @@
 // app.js - SIMPLIFIED VERSION
 
 // Make functions available globally
+// Make all clickable functions available globally
+window.showRegister = function() {
+    showSection('login-section');
+    document.querySelector('.login-form').classList.add('hidden');
+    document.querySelector('.register-form').classList.remove('hidden');
+};
+
+window.showLogin = function() {
+    showSection('login-section');
+    document.querySelector('.register-form').classList.add('hidden');
+    document.querySelector('.login-form').classList.remove('hidden');
+};
+
+
 window.showCreateSpin = function() {
     showSection('create-spin-section');
 };
@@ -14,36 +28,28 @@ window.login = function() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     
+    console.log('Attempting to login:', email);
+    
+    if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+    }
+    
     firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(() => {
+    .then((userCredential) => {
+        console.log('Login successful:', userCredential.user.email);
         alert('Welcome back! 🚴');
     })
     .catch((error) => {
-        alert('Login failed: ' + error.message);
-    });
-};
-
-window.register = function() {
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const name = document.getElementById('register-name').value;
-    const bikeType = document.getElementById('bike-type').value;
-    
-    firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-        const user = userCredential.user;
-        return window.database.ref('users/' + user.uid).set({
-            name: name,
-            email: email,
-            bikeType: bikeType,
-            joined: new Date().toISOString()
-        });
-    })
-    .then(() => {
-        alert('Account created successfully! 🎉');
-    })
-    .catch((error) => {
-        alert('Registration failed: ' + error.message);
+        console.error('Login error:', error);
+        
+        if (error.code === 'auth/user-not-found') {
+            alert('No account found with this email. Please register first.');
+        } else if (error.code === 'auth/wrong-password') {
+            alert('Incorrect password. Please try again.');
+        } else {
+            alert('Login failed: ' + error.message);
+        }
     });
 };
 

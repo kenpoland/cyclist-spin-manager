@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const firebaseConfig = {
         apiKey: "AIzaSyCs-FWwuC4i3qVsGjlRCz0jzXW6TmYXEs4",
         authDomain: "cyclistspinmanager.firebaseapp.com",
-        databaseURL: "https://cyclistspinmanager-default-rtdb.europe-west1.firebasedatabase.app/",
+        databaseURL: "https://cyclistspinmanager-default-rtdb.europe-west1.firebasedatabase.app",
         projectId: "cyclistspinmanager",
         storageBucket: "cyclistspinmanager.appspot.com",
         messagingSenderId: "297071510855",

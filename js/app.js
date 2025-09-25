@@ -1,11 +1,13 @@
-// app.js - SIMPLIFIED VERSION
+// app.js - COMPLETE FIXED VERSION
 
-// Make functions available globally
-// Make all clickable functions available globally
-window.showRegister = function() {
-    showSection('login-section');
-    document.querySelector('.login-form').classList.add('hidden');
-    document.querySelector('.register-form').classList.remove('hidden');
+// Make all functions available globally
+window.showCreateSpin = function() {
+    showSection('create-spin-section');
+};
+
+window.showApp = function() {
+    showSection('app-section');
+    loadSpins();
 };
 
 window.showLogin = function() {
@@ -14,14 +16,10 @@ window.showLogin = function() {
     document.querySelector('.login-form').classList.remove('hidden');
 };
 
-
-window.showCreateSpin = function() {
-    showSection('create-spin-section');
-};
-
-window.showApp = function() {
-    showSection('app-section');
-    loadSpins();
+window.showRegister = function() {
+    showSection('login-section');
+    document.querySelector('.login-form').classList.add('hidden');
+    document.querySelector('.register-form').classList.remove('hidden');
 };
 
 window.login = function() {
@@ -53,6 +51,63 @@ window.login = function() {
     });
 };
 
+window.register = function() {
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const name = document.getElementById('register-name').value;
+    const bikeType = document.getElementById('bike-type').value;
+    
+    console.log('Attempting to register user:', email);
+    
+    // Basic validation
+    if (!email || !password || !name) {
+        alert('Please fill in all required fields!');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+    }
+    
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        console.log('User created successfully:', userCredential.user.uid);
+        
+        // Save user info to database
+        const user = userCredential.user;
+        return window.database.ref('users/' + user.uid).set({
+            name: name,
+            email: email,
+            bikeType: bikeType,
+            joined: new Date().toISOString()
+        });
+    })
+    .then(() => {
+        console.log('User data saved to database');
+        alert('Account created successfully! Welcome to the cycling community! 🎉');
+        
+        // Clear the form
+        document.getElementById('register-email').value = '';
+        document.getElementById('register-password').value = '';
+        document.getElementById('register-name').value = '';
+    })
+    .catch((error) => {
+        console.error('Registration error:', error);
+        
+        // Better error messages
+        if (error.code === 'auth/email-already-in-use') {
+            alert('This email is already registered. Please try logging in instead.');
+        } else if (error.code === 'auth/invalid-email') {
+            alert('Please enter a valid email address.');
+        } else if (error.code === 'auth/weak-password') {
+            alert('Password is too weak. Please use at least 6 characters.');
+        } else {
+            alert('Registration failed: ' + error.message);
+        }
+    });
+};
+
 window.createSpin = function() {
     const user = firebase.auth().currentUser;
     if (!user) {
@@ -72,82 +127,37 @@ window.createSpin = function() {
         participants: [user.uid]
     };
     
+    console.log('Creating spin with data:', spinData);
+    
     if (!spinData.title || !spinData.time || !spinData.location || !spinData.distance) {
         alert('Please fill in all fields!');
         return;
     }
     
-    console.log('Creating spin with data:', spinData);
-    
-    // Use window.database to make sure it's available
-    window.database.ref('spins').push(spinData)
+    // Test database connection first
+    console.log('Testing database connection...');
+    window.database.ref('.info/connected').once('value')
+    .then((snap) => {
+        console.log('Database connected:', snap.val());
+        
+        // Now try to save the spin
+        return window.database.ref('spins').push(spinData);
+    })
     .then(() => {
+        console.log('✅ Spin saved successfully!');
         alert('Spin created successfully! 🎉');
         showApp();
+        // Clear form
         document.getElementById('spin-title').value = '';
         document.getElementById('spin-time').value = '';
         document.getElementById('spin-location').value = '';
         document.getElementById('spin-distance').value = '';
     })
     .catch((error) => {
+        console.error('❌ Error saving spin:', error);
         alert('Error creating spin: ' + error.message);
     });
 };
-
-// Helper functions
-function showSection(sectionId) {
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
-    document.getElementById(sectionId).classList.add('active');
-}
-
-function loadSpins() {
-    const spinsContainer = document.getElementById('spins-container');
-    spinsContainer.innerHTML = '<p>Loading spins... 🚴</p>';
-    
-    // Use window.database to make sure it's available
-    window.database.ref('spins').once('value')
-    .then((snapshot) => {
-        spinsContainer.innerHTML = '';
-        
-        if (!snapshot.exists()) {
-            spinsContainer.innerHTML = '<p>No spins scheduled yet. Be the first to create one!</p>';
-            return;
-        }
-        
-        snapshot.forEach((childSnapshot) => {
-            const spin = childSnapshot.val();
-            spin.id = childSnapshot.key;
-            renderSpinCard(spin);
-        });
-    })
-    .catch((error) => {
-        spinsContainer.innerHTML = '<p>Error loading spins. Please try again.</p>';
-        console.error('Error:', error);
-    });
-}
-
-function renderSpinCard(spin) {
-    const spinsContainer = document.getElementById('spins-container');
-    const card = document.createElement('div');
-    card.className = 'spin-card';
-    
-    card.innerHTML = `
-        <h3>${spin.title}</h3>
-        <div>
-            <span class="spin-type ${spin.type}">${spin.type.toUpperCase()}</span>
-            <strong>${spin.distance}km</strong>
-        </div>
-        <p>📅 ${new Date(spin.time).toLocaleString()}</p>
-        <p>📍 ${spin.location}</p>
-        <p>👥 ${spin.participants ? spin.participants.length : 1} riders</p>
-        <p>Created by: ${spin.creatorEmail}</p>
-        <button onclick="joinSpin('${spin.id}')" class="btn-primary">Join Spin!</button>
-    `;
-    
-    spinsContainer.appendChild(card);
-}
 
 window.joinSpin = function(spinId) {
     const user = firebase.auth().currentUser;
@@ -170,6 +180,70 @@ window.joinSpin = function(spinId) {
     });
 };
 
+// Helper functions
+function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+}
+
+function loadSpins() {
+    const spinsContainer = document.getElementById('spins-container');
+    spinsContainer.innerHTML = '<p>Loading spins... 🚴</p>';
+    
+    window.database.ref('spins').once('value')
+    .then((snapshot) => {
+        spinsContainer.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+            spinsContainer.innerHTML = '<p>No spins scheduled yet. Be the first to create one!</p>';
+            return;
+        }
+        
+        snapshot.forEach((childSnapshot) => {
+            const spin = childSnapshot.val();
+            spin.id = childSnapshot.key;
+            renderSpinCard(spin);
+        });
+    })
+    .catch((error) => {
+        spinsContainer.innerHTML = '<p>Error loading spins. Please try again.</p>';
+        console.error('Error loading spins:', error);
+    });
+}
+
+function renderSpinCard(spin) {
+    const spinsContainer = document.getElementById('spins-container');
+    const card = document.createElement('div');
+    card.className = 'spin-card';
+    
+    // Format the date properly
+    let displayDate = 'Date not set';
+    try {
+        if (spin.time) {
+            displayDate = new Date(spin.time).toLocaleString();
+        }
+    } catch (e) {
+        console.log('Date formatting error:', e);
+    }
+    
+    card.innerHTML = `
+        <h3>${spin.title || 'Untitled Spin'}</h3>
+        <div>
+            <span class="spin-type ${spin.type}">${(spin.type || 'road').toUpperCase()}</span>
+            <strong>${spin.distance || '0'}km</strong>
+        </div>
+        <p>📅 ${displayDate}</p>
+        <p>📍 ${spin.location || 'Location not set'}</p>
+        <p>👥 ${spin.participants ? spin.participants.length : 1} riders</p>
+        <p>Created by: ${spin.creatorEmail || 'Unknown'}</p>
+        <button onclick="joinSpin('${spin.id}')" class="btn-primary">Join Spin!</button>
+    `;
+    
+    spinsContainer.appendChild(card);
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚴 Cycling app loaded!');
@@ -178,6 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('logout-btn').addEventListener('click', function() {
         firebase.auth().signOut().then(() => {
             alert('Logged out successfully! 👋');
+            // Reset forms
+            document.querySelector('.register-form').classList.add('hidden');
+            document.querySelector('.login-form').classList.remove('hidden');
         });
     });
     
@@ -193,6 +270,19 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('user-name').textContent = 'Guest';
             document.getElementById('logout-btn').classList.add('btn-hidden');
             showSection('login-section');
+            
+            // Make sure login form is visible by default
+            document.querySelector('.register-form').classList.add('hidden');
+            document.querySelector('.login-form').classList.remove('hidden');
         }
     });
+    
+    // Test database connection
+    if (window.database) {
+        window.database.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                console.log('✅ Database connected successfully!');
+            }
+        });
+    }
 });
